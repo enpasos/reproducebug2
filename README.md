@@ -23,33 +23,94 @@ Using a toy example derived from [djl docs](https://d2l.djl.ai/chapter_linear-ne
 
 
 **Result:**
-- number of managed arrays grows by 18 per epoch
-- 2 gradients are removed per epoch
+- number of managed arrays grows by 28 per epoch
+- 2 gradients are removed per gradient collection
 
 **Raw Output:**
 ```    
 [main] INFO ai.djl.pytorch.engine.PtEngine - Number of inter-op threads is 8
 [main] INFO ai.djl.pytorch.engine.PtEngine - Number of intra-op threads is 8
-features: [0,352672, 2,204252]
-label: -2.5814414
+features: [-0,413181, 0,584059]
+label: 1.385866
 [main] INFO com.enpasos.bugs.Main - Training epoch = 0
+[main] INFO com.enpasos.bugs.Main - next batch
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 19 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - ...newGradientCollector()
 [main] INFO ai.djl.pytorch.engine.PtGradientCollector - 19 no of managed arrays
 [main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
-epoch;duration[ms];gpuMem[MiB]
-0;8;1726
-[main] INFO com.enpasos.bugs.Main - Training epoch = 1
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 32 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - sgd(params, lr, batchSize);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 38 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - batch.close();
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 27 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - next batch
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 29 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - ...newGradientCollector()
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 29 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 42 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - sgd(params, lr, batchSize);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 48 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - batch.close();
 [main] INFO ai.djl.pytorch.engine.PtGradientCollector - 37 no of managed arrays
-[main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - NDArray trainL = squaredLoss(...);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 45 no of managed arrays
 epoch;duration[ms];gpuMem[MiB]
-0;8;1726
-1;3;1726
-[main] INFO com.enpasos.bugs.Main - Training epoch = 2
+0;15;1726
+[main] INFO com.enpasos.bugs.Main - Training epoch = 1
+[main] INFO com.enpasos.bugs.Main - next batch
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 47 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - ...newGradientCollector()
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 47 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 60 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - sgd(params, lr, batchSize);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 66 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - batch.close();
 [main] INFO ai.djl.pytorch.engine.PtGradientCollector - 55 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - next batch
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 57 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - ...newGradientCollector()
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 57 no of managed arrays
 [main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 70 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - sgd(params, lr, batchSize);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 76 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - batch.close();
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 65 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - NDArray trainL = squaredLoss(...);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 73 no of managed arrays
 epoch;duration[ms];gpuMem[MiB]
-0;8;1726
-1;3;1726
-2;3;1726
+0;15;1726
+1;8;1726
+[main] INFO com.enpasos.bugs.Main - Training epoch = 2
+[main] INFO com.enpasos.bugs.Main - next batch
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 75 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - ...newGradientCollector()
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 75 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 88 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - sgd(params, lr, batchSize);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 94 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - batch.close();
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 83 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - next batch
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 85 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - ...newGradientCollector()
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 85 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - removing the gradient in 2 no of managed arrays
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 98 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - sgd(params, lr, batchSize);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 104 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - batch.close();
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 93 no of managed arrays
+[main] INFO com.enpasos.bugs.Main - NDArray trainL = squaredLoss(...);
+[main] INFO ai.djl.pytorch.engine.PtGradientCollector - 101 no of managed arrays
+epoch;duration[ms];gpuMem[MiB]
+0;15;1726
+1;8;1726
+2;7;1726
+
 ```
 
 **Stack:**

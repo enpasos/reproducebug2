@@ -6,6 +6,7 @@ import ai.djl.ndarray.NDList;
 import ai.djl.ndarray.NDManager;
 import ai.djl.ndarray.types.DataType;
 import ai.djl.ndarray.types.Shape;
+import ai.djl.pytorch.engine.PtGradientCollector;
 import ai.djl.training.GradientCollector;
 import ai.djl.training.dataset.ArrayDataset;
 import ai.djl.training.dataset.Batch;
@@ -36,10 +37,10 @@ public final class Main {
     }
 
     public static void main(String[] args) throws IOException, TranslateException {
-         Main.runExample( );
+        Main.runExample( );
     }
 
-    public static void runExample( )   {
+    public static void runExample( ) throws TranslateException, IOException {
         try (NDManager manager = NDManager.newBaseManager();) {
 
             List<DurAndMem> durations = new ArrayList<>();
@@ -47,7 +48,7 @@ public final class Main {
             NDArray trueW = manager.create(new float[]{2, -3.4f});
             float trueB = 4.2f;
 
-            DataPoints dp = syntheticData(manager, trueW, trueB, 1000);
+            DataPoints dp = syntheticData(manager, trueW, trueB, 20);
             NDArray features = dp.getX();
             NDArray labels = dp.getY();
 
@@ -87,25 +88,29 @@ public final class Main {
                 // the examples in the training dataset are used once in one epoch
                 // iteration. The features and tags of minibatch examples are given by X
                 // and y respectively.
-                try (Batch batch = dataset.getData(manager).iterator().next()) {
+                for (Batch batch : dataset.getData(manager)) {
+                    log.info("next batch");
+                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
                     NDArray X = batch.getData().head();
                     NDArray y = batch.getLabels().head();
-
+                    log.info("...newGradientCollector()");
                     try (GradientCollector gc = Engine.getInstance().newGradientCollector()) {
                         // Minibatch loss in X and y
                         NDArray l = squaredLoss(linreg(X, params.get(0), params.get(1)), y);
                         gc.backward(l);  // Compute gradient on l with respect to w and b
                     }
-                    sgd(params, lr, batchSize);  // Update parameters using their gradient
-
-
-                } catch (TranslateException e) {
-                    throw new RuntimeException(e);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
+                    log.info("sgd(params, lr, batchSize);");
+                    sgd(params, lr, batchSize);
+                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
+                    log.info("batch.close();");
+                    batch.close();
+                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
                 }
+                log.info("NDArray trainL = squaredLoss(...);");
                 NDArray trainL = squaredLoss(linreg(features, params.get(0), params.get(1)), labels);
-               // System.out.printf("epoch %d, loss %f\n", epoch + 1, trainL.mean().getFloat());
+                PtGradientCollector.getAndLogManagedArrays();  // just for logging
+                // System.out.printf("epoch %d, loss %f\n", epoch + 1, trainL.mean().getFloat());
 
                 duration.off();
                 durations.add(duration);

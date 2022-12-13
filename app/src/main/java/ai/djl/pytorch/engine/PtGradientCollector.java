@@ -17,16 +17,15 @@ import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDManager;
 import ai.djl.pytorch.jni.JniUtils;
 import ai.djl.training.GradientCollector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** {@code PtGradientCollector} is the PyTorch implementation of {@link GradientCollector}. */
+@Slf4j
 public final class PtGradientCollector implements GradientCollector {
 
-    private static final Logger logger = LoggerFactory.getLogger(PtGradientCollector.class);
 
     private boolean gradModel;
     private static AtomicBoolean isCollecting = new AtomicBoolean();
@@ -39,8 +38,8 @@ public final class PtGradientCollector implements GradientCollector {
         boolean wasCollecting = isCollecting.getAndSet(true);
         if (wasCollecting) {
             throw new IllegalStateException(
-                    "A PtGradientCollector is already collecting. Only one can be collecting at a"
-                            + " time");
+                "A PtGradientCollector is already collecting. Only one can be collecting at a"
+                    + " time");
         }
 
         zeroGradients();
@@ -51,9 +50,9 @@ public final class PtGradientCollector implements GradientCollector {
     public void backward(NDArray target) {
         // TODO manager should create the new NDArray on the same device
         NDArray grad =
-                target.getManager()
-                        .ones(target.getShape(), target.getDataType())
-                        .toDevice(target.getDevice(), false);
+            target.getManager()
+                .ones(target.getShape(), target.getDataType())
+                .toDevice(target.getDevice(), false);
         backward(target, grad, false, false);
     }
 
@@ -75,9 +74,7 @@ public final class PtGradientCollector implements GradientCollector {
     /** {@inheritDoc} */
     @Override
     public void zeroGradients() {
-        NDManager systemManager = PtNDManager.getSystemManager();
-        List<NDArray> managedArrays = systemManager.getManagedArrays();
-        logger.info("{} no of managed arrays", managedArrays.size());
+        List<NDArray> managedArrays = getAndLogManagedArrays();
         int count = 0;
         for (NDArray array : managedArrays) {
             if (array.hasGradient()) {
@@ -85,7 +82,14 @@ public final class PtGradientCollector implements GradientCollector {
                 array.getGradient().subi(array.getGradient());
             }
         }
-        logger.info("removing the gradient in {} no of managed arrays", count);
+        log.info("removing the gradient in {} no of managed arrays", count);
+    }
+
+    public static List<NDArray> getAndLogManagedArrays() {
+        NDManager systemManager = PtNDManager.getSystemManager();
+        List<NDArray> managedArrays = systemManager.getManagedArrays();
+        log.info("{} no of managed arrays", managedArrays.size());
+        return managedArrays;
     }
 
     /** {@inheritDoc} */
