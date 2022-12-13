@@ -14,6 +14,19 @@ Using a toy example derived from [djl docs](https://d2l.djl.ai/chapter_linear-ne
     java -jar app/build/libs/app-0.0.1-SNAPSHOT.jar  
 ```
 
+
+
+
+## Example run
+
+### Run1
+
+
+**Result:**
+- number of managed arrays grows by 18 per epoch
+- 2 gradients are removed per epoch
+
+**Raw Output:**
 ```    
 [main] INFO ai.djl.pytorch.engine.PtEngine - Number of inter-op threads is 8
 [main] INFO ai.djl.pytorch.engine.PtEngine - Number of intra-op threads is 8
@@ -38,15 +51,6 @@ epoch;duration[ms];gpuMem[MiB]
 1;3;1726
 2;3;1726
 ```
-
-
-## Example run
-
-### Run1
-**Result:**
-- number of managed arrays grows by 18 per epoch
-- 2 gradients are removed per epoch
-
 
 **Stack:**
 - Java
