@@ -18,17 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static ai.djl.pytorch.engine.PtNDManager.debugDumpFromSystemManager;
 import static com.enpasos.bugs.Training.sgd;
 import static com.enpasos.bugs.Training.linreg;
 import static com.enpasos.bugs.Training.squaredLoss;
 
 
 /**
- * An example of training an image classification (MNIST) model.
- *
- * <p>See this <a
- * href="https://github.com/deepjavalibrary/djl/blob/master/examples/docs/train_mnist_mlp.md">doc</a>
- * for information about this example.
+ * A simple example taken from https://d2l.djl.ai/chapter_linear-networks/linear-regression-scratch.html to demonstrate a bug in DJL.
  */
 @Slf4j
 public final class Main {
@@ -37,18 +34,22 @@ public final class Main {
     }
 
     public static void main(String[] args) throws IOException, TranslateException {
-        Main.runExample( );
-    }
 
-    public static void runExample( ) throws TranslateException, IOException {
-        try (NDManager manager = NDManager.newBaseManager();) {
+        boolean isGarbageCollectionOn = false;
+
+        if(args.length > 0 && args[0].equals("gc")) {
+            isGarbageCollectionOn = true;
+        }
+
+
+        try (NDManager manager = NDManager.newBaseManager(isGarbageCollectionOn);) {
 
             List<DurAndMem> durations = new ArrayList<>();
 
             NDArray trueW = manager.create(new float[]{2, -3.4f});
             float trueB = 4.2f;
 
-            DataPoints dp = syntheticData(manager, trueW, trueB, 20);
+            DataPoints dp = syntheticData(manager, trueW, trueB, 1000);
             NDArray features = dp.getX();
             NDArray labels = dp.getY();
 
@@ -65,13 +66,12 @@ public final class Main {
                 .build();
 
 
-
             NDArray w = manager.randomNormal(0, 0.01f, new Shape(2, 1), DataType.FLOAT32);
             NDArray b = manager.zeros(new Shape(1));
             NDList params = new NDList(w, b);
 
             float lr = 0.03f;
-            int numEpochs = 3;
+            int numEpochs = 100;
 
 
             for (NDArray param : params) {
@@ -89,28 +89,18 @@ public final class Main {
                 // iteration. The features and tags of minibatch examples are given by X
                 // and y respectively.
                 for (Batch batch : dataset.getData(manager)) {
-                    log.info("next batch");
-                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
                     NDArray X = batch.getData().head();
                     NDArray y = batch.getLabels().head();
-                    log.info("...newGradientCollector()");
+                   // log.info("...newGradientCollector()");
                     try (GradientCollector gc = Engine.getInstance().newGradientCollector()) {
                         // Minibatch loss in X and y
                         NDArray l = squaredLoss(linreg(X, params.get(0), params.get(1)), y);
                         gc.backward(l);  // Compute gradient on l with respect to w and b
                     }
-                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
-                    log.info("sgd(params, lr, batchSize);");
                     sgd(params, lr, batchSize);
-                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
-                    log.info("batch.close();");
                     batch.close();
-                    PtGradientCollector.getAndLogManagedArrays();  // just for logging
                 }
-                log.info("NDArray trainL = squaredLoss(...);");
                 NDArray trainL = squaredLoss(linreg(features, params.get(0), params.get(1)), labels);
-                PtGradientCollector.getAndLogManagedArrays();  // just for logging
-                // System.out.printf("epoch %d, loss %f\n", epoch + 1, trainL.mean().getFloat());
 
                 duration.off();
                 durations.add(duration);
