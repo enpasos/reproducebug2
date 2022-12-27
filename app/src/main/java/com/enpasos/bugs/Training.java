@@ -1,7 +1,15 @@
 package com.enpasos.bugs;
 
+import ai.djl.Model;
+import ai.djl.engine.Engine;
 import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDList;
+import ai.djl.training.DefaultTrainingConfig;
+import ai.djl.training.TrainingResult;
+import ai.djl.training.evaluator.Accuracy;
+import ai.djl.training.listener.SaveModelTrainingListener;
+import ai.djl.training.listener.TrainingListener;
+import ai.djl.training.loss.Loss;
 
 public class Training {
 
@@ -22,5 +30,23 @@ public class Training {
             // param = param - param.gradient * lr / batchSize
             param.subi(param.getGradient().mul(lr).div(batchSize));
         }
+    }
+
+    static DefaultTrainingConfig setupTrainingConfig() {
+        String outputDir = "./build/output";
+        SaveModelTrainingListener listener = new SaveModelTrainingListener(outputDir);
+        listener.setSaveModelCallback(
+            trainer -> {
+                TrainingResult result = trainer.getTrainingResult();
+                Model model = trainer.getModel();
+                float accuracy = result.getValidateEvaluation("Accuracy");
+                model.setProperty("Accuracy", String.format("%.5f", accuracy));
+                model.setProperty("Loss", String.format("%.5f", result.getValidateLoss()));
+            });
+        return new DefaultTrainingConfig(Loss.softmaxCrossEntropyLoss())
+            .addEvaluator(new Accuracy())
+            .optDevices(Engine.getInstance().getDevices(1))
+            .addTrainingListeners(TrainingListener.Defaults.logging(outputDir))
+            .addTrainingListeners(listener);
     }
 }

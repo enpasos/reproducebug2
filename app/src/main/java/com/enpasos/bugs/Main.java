@@ -1,13 +1,20 @@
 package com.enpasos.bugs;
 
+import ai.djl.Device;
+import ai.djl.Model;
 import ai.djl.engine.Engine;
 import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDList;
 import ai.djl.ndarray.NDManager;
+import ai.djl.ndarray.gc.SwitchGarbageCollection;
 import ai.djl.ndarray.types.DataType;
 import ai.djl.ndarray.types.Shape;
+import ai.djl.nn.Block;
+import ai.djl.nn.LambdaBlock;
 import ai.djl.pytorch.engine.PtGradientCollector;
+import ai.djl.training.DefaultTrainingConfig;
 import ai.djl.training.GradientCollector;
+import ai.djl.training.Trainer;
 import ai.djl.training.dataset.ArrayDataset;
 import ai.djl.training.dataset.Batch;
 import ai.djl.translate.TranslateException;
@@ -18,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static ai.djl.pytorch.engine.PtNDManager.debugDumpFromSystemManager;
+//import static ai.djl.pytorch.engine.PtNDManager.debugDumpFromSystemManager;
+import static com.enpasos.bugs.Training.setupTrainingConfig;
 import static com.enpasos.bugs.Training.sgd;
 import static com.enpasos.bugs.Training.linreg;
 import static com.enpasos.bugs.Training.squaredLoss;
@@ -35,14 +43,14 @@ public final class Main {
 
     public static void main(String[] args) throws IOException, TranslateException {
 
-        boolean isGarbageCollectionOn = false;
 
         if(args.length > 0 && args[0].equals("gc")) {
-            isGarbageCollectionOn = true;
+            SwitchGarbageCollection.on();
         }
 
 
-        try (NDManager manager = NDManager.newBaseManager(isGarbageCollectionOn);) {
+
+       try (NDManager manager = NDManager.newBaseManager();) {
 
             List<DurAndMem> durations = new ArrayList<>();
 
@@ -68,6 +76,10 @@ public final class Main {
 
             NDArray w = manager.randomNormal(0, 0.01f, new Shape(2, 1), DataType.FLOAT32);
             NDArray b = manager.zeros(new Shape(1));
+
+            Block block = LambdaBlock.singleton(x ->  x.dot(w).add(b));
+
+
             NDList params = new NDList(w, b);
 
             float lr = 0.03f;
@@ -78,36 +90,45 @@ public final class Main {
                 param.setRequiresGradient(true);
             }
 
-            for (int epoch = 0; epoch < numEpochs; epoch++) {
+            try (Model model = Model.newInstance("simple model", Device.gpu())) {
+                model.setBlock(block);
 
-                log.info("Training epoch = {}", epoch);
-                DurAndMem duration = new DurAndMem();
-                duration.on();
+                DefaultTrainingConfig config = setupTrainingConfig();
 
-                // Assuming the number of examples can be divided by the batch size, all
-                // the examples in the training dataset are used once in one epoch
-                // iteration. The features and tags of minibatch examples are given by X
-                // and y respectively.
-                for (Batch batch : dataset.getData(manager)) {
-                    NDArray X = batch.getData().head();
-                    NDArray y = batch.getLabels().head();
-                   // log.info("...newGradientCollector()");
-                    try (GradientCollector gc = Engine.getInstance().newGradientCollector()) {
-                        // Minibatch loss in X and y
-                        NDArray l = squaredLoss(linreg(X, params.get(0), params.get(1)), y);
-                        gc.backward(l);  // Compute gradient on l with respect to w and b
+
+
+                    for (int epoch = 0; epoch < numEpochs; epoch++) {
+
+                        log.info("Training epoch = {}", epoch);
+                        DurAndMem duration = new DurAndMem();
+                        duration.on();
+
+                        // Assuming the number of examples can be divided by the batch size, all
+                        // the examples in the training dataset are used once in one epoch
+                        // iteration. The features and tags of minibatch examples are given by X
+                        // and y respectively.
+                        for (Batch batch : dataset.getData(manager)) {
+                            NDArray X = batch.getData().head();
+                            NDArray y = batch.getLabels().head();
+                            // log.info("...newGradientCollector()");
+                            try (GradientCollector gc = Engine.getInstance().newGradientCollector()) {
+                                // Minibatch loss in X and y
+                                NDArray l = squaredLoss(linreg(X, params.get(0), params.get(1)), y);
+                                gc.backward(l);  // Compute gradient on l with respect to w and b
+                            }
+                            sgd(params, lr, batchSize);
+                            batch.close();
+                        }
+                        NDArray trainL = squaredLoss(linreg(features, params.get(0), params.get(1)), labels);
+
+                        duration.off();
+                        durations.add(duration);
+                        System.out.println("epoch;duration[ms];gpuMem[MiB]");
+                        IntStream.range(0, durations.size()).forEach(i -> System.out.println(i + ";" + durations.get(i).getDur() + ";" + durations.get(i).getMem() / 1024 / 1024));
+
                     }
-                    sgd(params, lr, batchSize);
-                    batch.close();
                 }
-                NDArray trainL = squaredLoss(linreg(features, params.get(0), params.get(1)), labels);
 
-                duration.off();
-                durations.add(duration);
-                System.out.println("epoch;duration[ms];gpuMem[MiB]");
-                IntStream.range(0, durations.size()).forEach(i -> System.out.println(i + ";" + durations.get(i).getDur() + ";" + durations.get(i).getMem() / 1024 / 1024));
-
-            }
         }
     }
 
