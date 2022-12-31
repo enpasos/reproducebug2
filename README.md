@@ -31,10 +31,10 @@ java -jar app/build/libs/app-0.0.1-SNAPSHOT.jar
 java -jar app/build/libs/app-0.0.1-SNAPSHOT.jar gc
 ```
 
-## run with using gc and more often cleaning of the weak reference
+## run with using gc and more often cleaning of the weak references
 
 ``` 
-java -XX:+UnlockExperimentalVMOptions -XX:G1MaxNewSizePercent=30 -jar app/build/libs/app-0.0.1-SNAPSHOT.jar gc
+java -XX:+UnlockExperimentalVMOptions -XX:G1MaxNewSizePercent=10 -jar app/build/libs/app-0.0.1-SNAPSHOT.jar gc
 ```
 
 
